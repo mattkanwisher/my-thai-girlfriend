@@ -57,7 +57,7 @@ def call_openai_llm(oaclient, content)
     if !response_text.nil? && response_text.length > 2
       @messages << { role: "assistant", content: response_text }
     end
-    return response_text.split("A:")[1]
+    return response_text #.split("A:")[1]
   end
 
 def convert(htvoice, content)
@@ -66,7 +66,7 @@ def convert(htvoice, content)
     payload = {
     #  "voice": "en-US-MichelleNeural",
       "voice": htvoice, #"th-TH-ThanwaNeural",
-      "speed": "0.6",
+      "speed": "0.3",
       "content": [
         content #   "either pass content s an array of strings , or ssml , but not both"
       ],
@@ -97,6 +97,7 @@ def convert(htvoice, content)
 end
   
 def download_ht(transcriptionID, tries=0)
+    audioDuration = 0
     if tries == 5 
         return nil
     end
@@ -131,7 +132,9 @@ def download_ht(transcriptionID, tries=0)
       return download_ht(transcriptionID, tries)
     end
     turl = data["audioUrl"]
-  
+    audio_duration = data["audioDuration"] * 1000
+    puts "audio_duration- #{audio_duration}"
+
     #download file
     url = URI(turl)
     downloaded_file = url.open()
@@ -147,7 +150,7 @@ def download_ht(transcriptionID, tries=0)
     tempfile.close
     #tempfile.unlink # in theory this deletes the file, we should do when program is done
   
-    return tempfile_path
+    return tempfile_path, audio_duration
   end
 
 def client
@@ -180,7 +183,7 @@ post '/callback' do
         tf = Tempfile.new([ 'line', '.m4a' ])
         tf.write(response.body)
         ap tf.path  #Sweet we have the audio
-        system "afplay #{tf.path}"
+        #system "afplay #{tf.path}"
 
         #tmp_voice_file2 = "recording2.wav" #todo make a tempfile
 
@@ -210,8 +213,9 @@ post '/callback' do
         #2. Call HT API to convert text to speech
         transcriptionID = convert(HT_VOICE, response_text)
         puts "transcriptionID-#{transcriptionID}"
-        filename = download_ht(transcriptionID)
-        FileUtils.cp(filename, "tmp.mp3")
+        filename, audio_duration = download_ht(transcriptionID)
+        puts "filename-#{filename}"
+        FileUtils.cp(filename, "static/files/tmp.mp3")
 
         output_audio = "#{BASE_URL}/files/tmp.mp3"
 #        output_audio = "https://play.ht/api/v1/articleStatus?transcriptionId=#{transcriptionID}"
@@ -221,7 +225,7 @@ post '/callback' do
         message = {
             type: 'audio',
             originalContentUrl: output_audio,
-            duration: 8000
+            duration: audio_duration.to_i.to_s
           }
    
         client.reply_message(event['replyToken'], message)
