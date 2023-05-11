@@ -47,8 +47,8 @@ post '/callback' do
 
         message = {
             type: 'audio',
-            originalContentUrl: "#{BASE_URL}/files/example.m4a",
-            duration: 60000
+            originalContentUrl: "#{BASE_URL}/files/playht1.mp3",
+            duration: 8000
           }
    
         client.reply_message(event['replyToken'], message)
