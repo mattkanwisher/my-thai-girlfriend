@@ -1,6 +1,8 @@
 # Language learning software with LLMs
 
 
+requires ffmpeg and localai 
+
 ```bash
 
 bundle install
