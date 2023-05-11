@@ -4,11 +4,14 @@ require 'line/bot'
 require "awesome_print"
 require 'sinatra/reloader'
 require "openai"
+require 'open-uri'
 
 BASE_URL = ENV["BASE_URL"]
-GPT_MODEL= "ggml-gpt4all-j"
-#MODEL_WHISPER="whisper-1"
-MODEL_WHISPER="ggml-large.bin"
+
+GPT_MODEL = "gpt-3.5-turbo" # "gpt-4"
+#GPT_MODEL= "ggml-gpt4all-j"
+MODEL_WHISPER="whisper-1"
+#MODEL_WHISPER="ggml-large.bin"
 
 set :public_folder, Proc.new { File.join(root, "static") }
 
@@ -21,7 +24,7 @@ OpenAI.configure do |config|
     config.access_token = ENV.fetch("OPENAI_API_KEY")
 #    config.uri_base = "http://localhost:8080/" 
     config.request_timeout = 240 # Optional
-    config.organization_id = ENV.fetch("OPENAI_ORGANIZATION_ID") # Optional.
+#    config.organization_id = ENV.fetch("OPENAI_ORGANIZATION_ID") # Optional.
 end
 
 oaclient = OpenAI::Client.new
@@ -93,7 +96,10 @@ def convert(htvoice, content)
     return data["transcriptionId"]
 end
   
-def download_ht(transcriptionID)
+def download_ht(transcriptionID, tries=0)
+    if tries == 5 
+        return nil
+    end
     url = URI("https://play.ht/api/v1/articleStatus?transcriptionId=#{transcriptionID}")
   
   
@@ -121,7 +127,8 @@ def download_ht(transcriptionID)
     if converted == false
       puts "not converted yet"
       sleep 5 
-      return download_ht(transcriptionID)
+      tries = tries +1
+      return download_ht(transcriptionID, tries)
     end
     turl = data["audioUrl"]
   
@@ -170,9 +177,10 @@ post '/callback' do
         puts "weeeeee audio"
         response = client.get_message_content(event.message['id'])
         ap response
-        tf = Tempfile.open("content")
+        tf = Tempfile.new([ 'line', '.m4a' ])
         tf.write(response.body)
         ap tf.path  #Sweet we have the audio
+        system "afplay #{tf.path}"
 
         #tmp_voice_file2 = "recording2.wav" #todo make a tempfile
 
