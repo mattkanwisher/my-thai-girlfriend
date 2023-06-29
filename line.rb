@@ -8,10 +8,11 @@ require 'open-uri'
 
 BASE_URL = ENV["BASE_URL"]
 
-GPT_MODEL = "gpt-3.5-turbo" # "gpt-4"
+#GPT_MODEL = "gpt-3.5-turbo" # "gpt-4"
 #GPT_MODEL= "ggml-gpt4all-j"
-MODEL_WHISPER="whisper-1"
-#MODEL_WHISPER="ggml-large.bin"
+GPT_MODEL="ggml-model-q4_0.bin"
+#MODEL_WHISPER="whisper-1"
+MODEL_WHISPER="ggml-large.bin"
 
 set :public_folder, Proc.new { File.join(root, "static") }
 
@@ -22,7 +23,7 @@ HT_VOICE="th-TH-PremwadeeNeural"
 
 OpenAI.configure do |config|
     config.access_token = ENV.fetch("OPENAI_API_KEY")
-#    config.uri_base = "http://localhost:8080/" 
+    config.uri_base = "http://localhost:8080/" 
     config.request_timeout = 240 # Optional
 #    config.organization_id = ENV.fetch("OPENAI_ORGANIZATION_ID") # Optional.
 end
@@ -245,4 +246,12 @@ post '/callback' do
 
   # Don't forget to return a successful response
   "OK"
+end
+
+
+get '/test_GPT' do
+    response_text = call_openai_llm(oaclient, "Hello my name is Matthew, what is your name?")
+    puts "response_text- #{response_text}"
+
+    "OK"
 end
